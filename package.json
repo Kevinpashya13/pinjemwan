@@ -1,0 +1,14 @@
+{
+  "name": "pinjemwan",
+  "version": "1.0.0",
+  "description": "Aplikasi peminjaman buku sederhana",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
