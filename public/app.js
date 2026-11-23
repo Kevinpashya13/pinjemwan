@@ -1,16 +1,33 @@
-let currentRole = 'tukang-pinjem';
+// --- Application State ---
+let currentView = 'dashboard';
+let cachedBooks = [];
+let cachedLoans = [];
 let selectedBook = null;
 
-const btnRoleTukangPinjem = document.getElementById('btn-role-tukang-pinjem');
-const btnRoleAdmin = document.getElementById('btn-role-admin');
-const viewTukangPinjem = document.getElementById('view-tukang-pinjem');
-const viewAdmin = document.getElementById('view-admin');
+// --- DOM Elements ---
+const navItems = document.querySelectorAll('.nav-item');
+const contentViews = document.querySelectorAll('.content-view');
+const badgeLoansCount = document.getElementById('badge-loans-count');
 
+// Dashboard Elements
+const statTotalTitles = document.getElementById('stat-total-titles');
+const statTotalCopies = document.getElementById('stat-total-copies');
+const statActiveLoans = document.getElementById('stat-active-loans');
+const statAvailableCopies = document.getElementById('stat-available-copies');
+const tableDashboardLoansBody = document.getElementById('table-dashboard-loans-body');
+const btnSeeAllLoans = document.getElementById('btn-see-all-loans');
+
+// Books Elements
 const booksGrid = document.getElementById('books-grid');
-const formAddBook = document.getElementById('form-add-book');
-const tableLoansBody = document.getElementById('table-loans-body');
-const activeLoansCount = document.getElementById('active-loans-count');
+const inputSearchBooks = document.getElementById('input-search-books');
 
+// Loans Elements
+const tableLoansBody = document.getElementById('table-loans-body');
+
+// Add Book Elements
+const formAddBook = document.getElementById('form-add-book');
+
+// Modal Elements
 const loanModal = document.getElementById('loan-modal');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCancelLoan = document.getElementById('btn-cancel-loan');
@@ -19,63 +36,168 @@ const modalBookTitle = document.getElementById('modal-book-title');
 const modalBookAuthor = document.getElementById('modal-book-author');
 const inputTukangPinjemName = document.getElementById('tukang-pinjem-name');
 
+// Mobile Sidebar Elements
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const appSidebar = document.getElementById('app-sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
-  loadBooks();
-  loadLoans();
+  refreshAllData();
 });
 
-// --- Event Listeners Setup ---
+// --- Event Listeners ---
 function setupEventListeners() {
-  // Role switcher toggle
-  btnRoleTukangPinjem.addEventListener('click', () => switchRole('tukang-pinjem'));
-  btnRoleAdmin.addEventListener('click', () => switchRole('admin'));
+  // Sidebar Navigation clicks
+  navItems.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetView = btn.dataset.view;
+      switchView(targetView);
+      closeMobileSidebar();
+    });
+  });
 
-  // Admin form submission: Add Book
+  // "Lihat Semua" in Dashboard
+  btnSeeAllLoans.addEventListener('click', () => {
+    switchView('loans');
+  });
+
+  // Search input in Daftar Buku
+  inputSearchBooks.addEventListener('input', (e) => {
+    const keyword = e.target.value.toLowerCase().trim();
+    const filtered = cachedBooks.filter((book) =>
+      book.title.toLowerCase().includes(keyword) || book.author.toLowerCase().includes(keyword)
+    );
+    renderBooksGrid(filtered);
+  });
+
+  // Form: Tambah Buku
   formAddBook.addEventListener('submit', handleAddBook);
 
-  // Tukang Pinjem modal events
+  // Modal Pinjam Buku
   btnCloseModal.addEventListener('click', closeModal);
   btnCancelLoan.addEventListener('click', closeModal);
   formLoan.addEventListener('submit', handleLoanSubmit);
+
+  // Mobile drawer events
+  btnToggleSidebar.addEventListener('click', toggleMobileSidebar);
+  sidebarOverlay.addEventListener('click', closeMobileSidebar);
 }
 
-// --- Switch Role Navigation ---
-function switchRole(role) {
-  currentRole = role;
-  if (role === 'tukang-pinjem') {
-    btnRoleTukangPinjem.classList.add('active');
-    btnRoleAdmin.classList.remove('active');
-    viewTukangPinjem.classList.remove('hidden');
-    viewAdmin.classList.add('hidden');
-    loadBooks(); // Refresh catalog
-  } else {
-    btnRoleAdmin.classList.add('active');
-    btnRoleTukangPinjem.classList.remove('active');
-    viewAdmin.classList.remove('hidden');
-    viewTukangPinjem.classList.add('hidden');
-    loadLoans(); // Refresh admin loan tracking
-  }
+// --- View Switcher ---
+function switchView(viewName) {
+  currentView = viewName;
+
+  // Update nav active state
+  navItems.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+
+  // Toggle visible section
+  contentViews.forEach((section) => {
+    if (section.id === `view-${viewName}`) {
+      section.classList.remove('hidden');
+    } else {
+      section.classList.add('hidden');
+    }
+  });
+
+  // Scroll to top of main area
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- API: Fetch & Render Books Catalog ---
+// --- Mobile Sidebar Controls ---
+function toggleMobileSidebar() {
+  appSidebar.classList.toggle('open');
+  sidebarOverlay.classList.toggle('hidden');
+}
+
+function closeMobileSidebar() {
+  appSidebar.classList.remove('open');
+  sidebarOverlay.classList.add('hidden');
+}
+
+// --- Data Fetching ---
+async function refreshAllData() {
+  await Promise.all([loadBooks(), loadLoans()]);
+  updateDashboard();
+}
+
 async function loadBooks() {
   try {
     const res = await fetch('/api/books');
-    if (!res.ok) throw new Error('Gagal memuat cyuks');
-    const books = await res.json();
-    renderBooksGrid(books);
+    if (!res.ok) throw new Error('Gagal memuat katalog buku');
+    cachedBooks = await res.json();
+    renderBooksGrid(cachedBooks);
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
-// Render book cards for Tukang Pinjem view
+async function loadLoans() {
+  try {
+    const res = await fetch('/api/loans?status=active');
+    if (!res.ok) throw new Error('Gagal memuat daftar peminjaman');
+    cachedLoans = await res.json();
+    renderLoansTable(cachedLoans);
+    badgeLoansCount.textContent = cachedLoans.length;
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// --- Render Dashboard & Stats ---
+function updateDashboard() {
+  const totalTitles = cachedBooks.length;
+  const totalCopies = cachedBooks.reduce((sum, b) => sum + (Number(b.total_copies) || 0), 0);
+  const availableCopies = cachedBooks.reduce((sum, b) => sum + (Number(b.available_copies) || 0), 0);
+  const activeLoans = cachedLoans.length;
+
+  statTotalTitles.textContent = totalTitles;
+  statTotalCopies.textContent = totalCopies;
+  statActiveLoans.textContent = activeLoans;
+  statAvailableCopies.textContent = availableCopies;
+
+  // Render top 5 recent loans in dashboard table
+  renderDashboardLoansTable(cachedLoans.slice(0, 5));
+}
+
+function renderDashboardLoansTable(loans) {
+  tableDashboardLoansBody.innerHTML = '';
+
+  if (loans.length === 0) {
+    tableDashboardLoansBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="empty-cell">Tidak ada buku yang sedang dipinjam saat ini.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  loans.forEach((loan) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(loan.book_title)}</strong></td>
+      <td>${escapeHtml(loan.tukang_pinjem)}</td>
+      <td>${formatDateTime(loan.borrow_date)}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm btn-return" data-id="${loan.id}">
+          Kembalikan
+        </button>
+      </td>
+    `;
+    tr.querySelector('.btn-return').addEventListener('click', () => handleReturnBook(loan.id));
+    tableDashboardLoansBody.appendChild(tr);
+  });
+}
+
+// --- Render Books Catalog Grid ---
 function renderBooksGrid(books) {
   booksGrid.innerHTML = '';
 
   if (books.length === 0) {
-    booksGrid.innerHTML = '<p class="empty-cell">Waduh cyuks, bukunya blom gw masukin yaks</p>';
+    booksGrid.innerHTML = '<p class="empty-cell">Tidak ada buku yang ditemukan.</p>';
     return;
   }
 
@@ -90,18 +212,17 @@ function renderBooksGrid(books) {
       </div>
       <div class="book-card-footer">
         <span class="badge ${isAvailable ? 'badge-available' : 'badge-empty'}">
-          ${isAvailable ? `Stok: ${book.available_copies}/${book.total_copies}` : 'Abis cyuks'}
+          ${isAvailable ? `Stok: ${book.available_copies}/${book.total_copies}` : 'Habis'}
         </span>
         <button 
           class="btn btn-primary btn-sm btn-pinjam" 
           ${isAvailable ? '' : 'disabled'}
         >
-          ${isAvailable ? 'Minjem dongs' : 'Minjem dongs'}
+          ${isAvailable ? 'Pinjam Buku' : 'Stok Habis'}
         </button>
       </div>
     `;
 
-    // Attach click event for borrowing
     const btnPinjam = card.querySelector('.btn-pinjam');
     if (isAvailable) {
       btnPinjam.addEventListener('click', () => openModal(book));
@@ -111,27 +232,14 @@ function renderBooksGrid(books) {
   });
 }
 
-// --- API: Fetch & Render Active Loans (Admin View) ---
-async function loadLoans() {
-  try {
-    const res = await fetch('/api/loans?status=active');
-    if (!res.ok) throw new Error('Gagal memuat cyuks');
-    const loans = await res.json();
-    renderLoansTable(loans);
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-// Render active loans table for Admin
+// --- Render Loans Table (View Peminjaman) ---
 function renderLoansTable(loans) {
   tableLoansBody.innerHTML = '';
-  activeLoansCount.textContent = `${loans.length} dipinjem`;
 
   if (loans.length === 0) {
     tableLoansBody.innerHTML = `
       <tr>
-        <td colspan="4" class="empty-cell">Gaada yang minjem cyuks.</td>
+        <td colspan="4" class="empty-cell">Belum ada peminjaman aktif.</td>
       </tr>
     `;
     return;
@@ -145,18 +253,16 @@ function renderLoansTable(loans) {
       <td>${formatDateTime(loan.borrow_date)}</td>
       <td>
         <button class="btn btn-secondary btn-sm btn-return" data-id="${loan.id}">
-          Balikins
+          Kembalikan
         </button>
       </td>
     `;
-
-    // Return button event
     tr.querySelector('.btn-return').addEventListener('click', () => handleReturnBook(loan.id));
     tableLoansBody.appendChild(tr);
   });
 }
 
-// --- API: Admin Add New Book ---
+// --- Form: Tambah Buku ---
 async function handleAddBook(e) {
   e.preventDefault();
   const title = document.getElementById('book-title').value.trim();
@@ -171,11 +277,12 @@ async function handleAddBook(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
+    if (!res.ok) throw new Error(data.error || 'Gagal menambahkan buku');
 
-    showToast(`Buku "${data.title}" Udah ditambahin cyuks`, 'success');
+    showToast(`Buku "${data.title}" berhasil ditambahkan!`, 'success');
     formAddBook.reset();
-    loadBooks();
+    await refreshAllData();
+    switchView('books'); // Pindah otomatis ke daftar buku
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -198,14 +305,14 @@ function closeModal() {
   loanModal.setAttribute('aria-hidden', 'true');
 }
 
-// --- API: Tukang Pinjem Submits Loan ---
+// --- Action: Pinjam Buku ---
 async function handleLoanSubmit(e) {
   e.preventDefault();
   if (!selectedBook) return;
 
   const tukang_pinjem = inputTukangPinjemName.value.trim();
   if (!tukang_pinjem) {
-    showToast('Nama lu isi dulu cyuks', 'error');
+    showToast('Nama peminjam wajib diisi', 'error');
     return;
   }
 
@@ -220,19 +327,19 @@ async function handleLoanSubmit(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
+    if (!res.ok) throw new Error(data.error || 'Gagal memproses peminjaman');
 
-    showToast(data.message || 'Udah dipinjemins', 'success');
+    showToast('Peminjaman berhasil dicatat!', 'success');
     closeModal();
-    loadBooks();
+    await refreshAllData();
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
-// --- API: Admin Returns Book ---
+// --- Action: Kembalikan Buku ---
 async function handleReturnBook(loanId) {
-  if (!confirm('Bukunya udah dibalikins?')) return;
+  if (!confirm('Apakah buku ini sudah diterima kembali?')) return;
 
   try {
     const res = await fetch(`/api/loans/${loanId}/return`, {
@@ -240,16 +347,16 @@ async function handleReturnBook(loanId) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
+    if (!res.ok) throw new Error(data.error || 'Gagal mengembalikan buku');
 
-    showToast(data.message || 'Udah dibalikins', 'success');
-    loadLoans();
-    loadBooks();
+    showToast('Buku berhasil dikembalikan!', 'success');
+    await refreshAllData();
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
+// --- Helper Functions ---
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');

@@ -16,55 +16,200 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Main Navigation & Header -->
-  <header class="app-header">
-    <div class="header-container">
+  <div class="app-shell">
+    <!-- Mobile Topbar & Hamburger -->
+    <header class="mobile-header">
       <div class="brand">
         <h1 class="brand-title">pinjemwan</h1>
-        <p class="brand-tagline">Peminjaman buku perpustakaan sederhana & transparan</p>
+      </div>
+      <button id="btn-toggle-sidebar" class="btn-hamburger" type="button" aria-label="Buka Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside id="app-sidebar" class="app-sidebar">
+      <div class="sidebar-brand">
+        <h1 class="brand-title">pinjemwan</h1>
+        <p class="brand-tagline">Katalog & sirkulasi buku</p>
       </div>
 
-      <!-- Segmented Control Role Switcher -->
-      <nav class="role-switcher" aria-label="Pilih Role">
-        <button id="btn-role-tukang-pinjem" class="role-btn active" type="button">
-          Tukang Pinjem
+      <nav class="sidebar-nav" aria-label="Navigasi Utama">
+        <!-- Dashboard Icon -->
+        <button class="nav-item active" data-view="dashboard" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="7" height="9" x="3" y="3" rx="1"/>
+              <rect width="7" height="5" x="14" y="3" rx="1"/>
+              <rect width="7" height="9" x="14" y="12" rx="1"/>
+              <rect width="7" height="5" x="3" y="16" rx="1"/>
+            </svg>
+          </span>
+          <span>Dashboard</span>
         </button>
-        <button id="btn-role-admin" class="role-btn" type="button">
-          Admin
+
+        <!-- Books Catalog Icon -->
+        <button class="nav-item" data-view="books" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </span>
+          <span>Daftar Buku</span>
+        </button>
+
+        <!-- Active Loans Icon -->
+        <button class="nav-item" data-view="loans" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              <path d="M12 11h4"/>
+              <path d="M12 16h4"/>
+              <path d="M8 11h.01"/>
+              <path d="M8 16h.01"/>
+            </svg>
+          </span>
+          <span>Peminjaman Aktif</span>
+          <span id="badge-loans-count" class="nav-badge">0</span>
+        </button>
+
+        <!-- Add Book Icon -->
+        <button class="nav-item" data-view="add-book" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8"/>
+              <path d="M8 12h8"/>
+            </svg>
+          </span>
+          <span>Tambah Buku</span>
         </button>
       </nav>
-    </div>
-  </header>
 
-  <main class="main-content">
-    <!-- VIEW 1: TUKANG PINJEM -->
-    <section id="view-tukang-pinjem" class="role-view">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Katalog Buku</h2>
-          <p class="section-desc">Pilih buku yang tersedia dan pinjam langsung tanpa ribet.</p>
-        </div>
+      <div class="sidebar-footer">
+        <p class="footer-meta">Node.js 22 SQLite • Anti-Slop</p>
       </div>
+    </aside>
 
-      <!-- Grid of Books -->
-      <div id="books-grid" class="books-grid">
-        <!-- Rendered dynamically by app.js -->
-      </div>
-    </section>
+    <!-- Backing overlay for mobile menu -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
 
-    <!-- VIEW 2: ADMIN DASHBOARD -->
-    <section id="view-admin" class="role-view hidden">
-      <div class="section-header">
-        <div>
+    <!-- MAIN CONTENT -->
+    <main class="app-main">
+      
+      <!-- VIEW 1: DASHBOARD -->
+      <section id="view-dashboard" class="content-view">
+        <div class="section-header">
           <h2 class="section-title">Dashboard Pengelola</h2>
-          <p class="section-desc">Pantau sirkulasi peminjaman buku dan tambah koleksi baru.</p>
+          <p class="section-desc">Ringkasan koleksi buku dan aktivitas sirkulasi terkini.</p>
         </div>
-      </div>
 
-      <div class="admin-grid">
-        <!-- Card: Add New Book Form -->
-        <div class="card form-card">
-          <h3 class="card-title">Tambah Koleksi Buku</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Judul Buku</span>
+            <div id="stat-total-titles" class="stat-value">-</div>
+            <span class="stat-caption">Koleksi terdaftar</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Eksemplar</span>
+            <div id="stat-total-copies" class="stat-value">-</div>
+            <span class="stat-caption">Fisik buku keseluruhan</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Buku Sedang Dipinjam</span>
+            <div id="stat-active-loans" class="stat-value text-accent">-</div>
+            <span class="stat-caption">Peminjam aktif saat ini</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Buku Tersedia</span>
+            <div id="stat-available-copies" class="stat-value text-success">-</div>
+            <span class="stat-caption">Siap untuk dipinjam</span>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">Peminjaman Terbaru</h3>
+            <button class="btn btn-secondary btn-sm" id="btn-see-all-loans" type="button">Lihat Semua</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Judul Buku</th>
+                  <th>Peminjam</th>
+                  <th>Waktu Pinjam</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-dashboard-loans-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: DAFTAR BUKU -->
+      <section id="view-books" class="content-view hidden">
+        <div class="section-header view-header-actions">
+          <div>
+            <h2 class="section-title">Daftar Buku</h2>
+            <p class="section-desc">Cari dan pinjam buku favoritmu tanpa antre.</p>
+          </div>
+          <!-- Search Box with Search Icon -->
+          <div class="filter-bar">
+            <div class="search-box">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.3-4.3"/>
+              </svg>
+              <input type="text" id="input-search-books" class="search-input" placeholder="Cari judul atau penulis..." />
+            </div>
+          </div>
+        </div>
+
+        <div id="books-grid" class="books-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- VIEW 3: PEMINJAMAN AKTIF -->
+      <section id="view-loans" class="content-view hidden">
+        <div class="section-header">
+          <h2 class="section-title">Daftar Peminjaman Aktif</h2>
+          <p class="section-desc">Pantau pembaca yang sedang meminjam dan konfirmasi pengembalian buku.</p>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Judul Buku</th>
+                  <th>Tukang Pinjem</th>
+                  <th>Waktu Pinjam</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-loans-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: TAMBAH BUKU -->
+      <section id="view-add-book" class="content-view hidden">
+        <div class="section-header">
+          <h2 class="section-title">Tambah Koleksi Baru</h2>
+          <p class="section-desc">Masukkan informasi buku baru ke dalam inventaris perpustakaan.</p>
+        </div>
+
+        <div class="card form-card-full">
           <form id="form-add-book" class="app-form">
             <div class="form-group">
               <label for="book-title">Judul Buku</label>
@@ -78,43 +223,27 @@
               <label for="book-copies">Jumlah Eksemplar (Stok)</label>
               <input type="number" id="book-copies" min="1" value="1" required />
             </div>
-            <button type="submit" class="btn btn-primary btn-block">Simpan Koleksi</button>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Simpan Koleksi Buku</button>
+            </div>
           </form>
         </div>
+      </section>
 
-        <!-- Card: Active Loans Tracking Table -->
-        <div class="card table-card">
-          <div class="card-header-flex">
-            <h3 class="card-title">Daftar Peminjam Aktif</h3>
-            <span id="active-loans-count" class="badge badge-neutral">0 dipinjam</span>
-          </div>
+    </main>
+  </div>
 
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Judul Buku</th>
-                  <th>Tukang Pinjem</th>
-                  <th>Waktu Pinjam</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="table-loans-body">
-                <!-- Rendered dynamically by app.js -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- MODAL: Form Peminjaman Buku (Tukang Pinjem) -->
+  <!-- MODAL: Pinjam Buku -->
   <div id="loan-modal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Konfirmasi Pinjam Buku</h3>
-        <button id="btn-close-modal" class="btn-close" type="button" aria-label="Tutup">&times;</button>
+        <button id="btn-close-modal" class="btn-close" type="button" aria-label="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
       </div>
       <form id="form-loan" class="app-form">
         <div class="book-preview-box">
@@ -125,7 +254,7 @@
 
         <div class="form-group">
           <label for="tukang-pinjem-name">Nama Tukang Pinjem</label>
-          <input type="text" id="tukang-pinjem-name" placeholder="Masukkan nama lengkap Anda" required />
+          <input type="text" id="tukang-pinjem-name" placeholder="Masukkan nama lengkap kamu" required />
         </div>
 
         <div class="modal-actions">
