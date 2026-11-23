@@ -1,8 +1,6 @@
-// --- Application State ---
 let currentRole = 'tukang-pinjem';
 let selectedBook = null;
 
-// --- DOM Elements ---
 const btnRoleTukangPinjem = document.getElementById('btn-role-tukang-pinjem');
 const btnRoleAdmin = document.getElementById('btn-role-admin');
 const viewTukangPinjem = document.getElementById('view-tukang-pinjem');
@@ -21,7 +19,6 @@ const modalBookTitle = document.getElementById('modal-book-title');
 const modalBookAuthor = document.getElementById('modal-book-author');
 const inputTukangPinjemName = document.getElementById('tukang-pinjem-name');
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadBooks();
@@ -65,7 +62,7 @@ function switchRole(role) {
 async function loadBooks() {
   try {
     const res = await fetch('/api/books');
-    if (!res.ok) throw new Error('Gagal memuat katalog buku');
+    if (!res.ok) throw new Error('Gagal memuat cyuks');
     const books = await res.json();
     renderBooksGrid(books);
   } catch (err) {
@@ -78,7 +75,7 @@ function renderBooksGrid(books) {
   booksGrid.innerHTML = '';
 
   if (books.length === 0) {
-    booksGrid.innerHTML = '<p class="empty-cell">Belum ada koleksi buku yang tersedia.</p>';
+    booksGrid.innerHTML = '<p class="empty-cell">Waduh cyuks, bukunya blom gw masukin yaks</p>';
     return;
   }
 
@@ -93,13 +90,13 @@ function renderBooksGrid(books) {
       </div>
       <div class="book-card-footer">
         <span class="badge ${isAvailable ? 'badge-available' : 'badge-empty'}">
-          ${isAvailable ? `Stok: ${book.available_copies}/${book.total_copies}` : 'Stok Habis'}
+          ${isAvailable ? `Stok: ${book.available_copies}/${book.total_copies}` : 'Abis cyuks'}
         </span>
         <button 
           class="btn btn-primary btn-sm btn-pinjam" 
           ${isAvailable ? '' : 'disabled'}
         >
-          ${isAvailable ? 'Pinjam Buku' : 'Habis'}
+          ${isAvailable ? 'Minjem dongs' : 'Minjem dongs'}
         </button>
       </div>
     `;
@@ -118,7 +115,7 @@ function renderBooksGrid(books) {
 async function loadLoans() {
   try {
     const res = await fetch('/api/loans?status=active');
-    if (!res.ok) throw new Error('Gagal memuat daftar peminjaman');
+    if (!res.ok) throw new Error('Gagal memuat cyuks');
     const loans = await res.json();
     renderLoansTable(loans);
   } catch (err) {
@@ -129,12 +126,12 @@ async function loadLoans() {
 // Render active loans table for Admin
 function renderLoansTable(loans) {
   tableLoansBody.innerHTML = '';
-  activeLoansCount.textContent = `${loans.length} dipinjam`;
+  activeLoansCount.textContent = `${loans.length} dipinjem`;
 
   if (loans.length === 0) {
     tableLoansBody.innerHTML = `
       <tr>
-        <td colspan="4" class="empty-cell">Tidak ada peminjaman aktif saat ini.</td>
+        <td colspan="4" class="empty-cell">Gaada yang minjem cyuks.</td>
       </tr>
     `;
     return;
@@ -148,7 +145,7 @@ function renderLoansTable(loans) {
       <td>${formatDateTime(loan.borrow_date)}</td>
       <td>
         <button class="btn btn-secondary btn-sm btn-return" data-id="${loan.id}">
-          Konfirmasi Kembali
+          Balikins
         </button>
       </td>
     `;
@@ -174,9 +171,9 @@ async function handleAddBook(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal menambahkan buku');
+    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
 
-    showToast(`Buku "${data.title}" berhasil ditambahkan!`, 'success');
+    showToast(`Buku "${data.title}" Udah ditambahin cyuks`, 'success');
     formAddBook.reset();
     loadBooks();
   } catch (err) {
@@ -208,7 +205,7 @@ async function handleLoanSubmit(e) {
 
   const tukang_pinjem = inputTukangPinjemName.value.trim();
   if (!tukang_pinjem) {
-    showToast('Nama tukang pinjem wajib diisi', 'error');
+    showToast('Nama lu isi dulu cyuks', 'error');
     return;
   }
 
@@ -223,11 +220,11 @@ async function handleLoanSubmit(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal meminjam buku');
+    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
 
-    showToast(data.message || 'Buku berhasil dipinjam!', 'success');
+    showToast(data.message || 'Udah dipinjemins', 'success');
     closeModal();
-    loadBooks(); // Update available stock
+    loadBooks();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -235,7 +232,7 @@ async function handleLoanSubmit(e) {
 
 // --- API: Admin Returns Book ---
 async function handleReturnBook(loanId) {
-  if (!confirm('Konfirmasi bahwa buku fisik telah diterima kembali?')) return;
+  if (!confirm('Bukunya udah dibalikins?')) return;
 
   try {
     const res = await fetch(`/api/loans/${loanId}/return`, {
@@ -243,17 +240,16 @@ async function handleReturnBook(loanId) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Gagal mengembalikan buku');
+    if (!res.ok) throw new Error(data.error || 'Gagal cyuks');
 
-    showToast(data.message || 'Buku berhasil dikembalikan', 'success');
-    loadLoans(); // Refresh admin table
-    loadBooks(); // Refresh catalog stock
+    showToast(data.message || 'Udah dibalikins', 'success');
+    loadLoans();
+    loadBooks();
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
-// --- Utility Functions ---
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
