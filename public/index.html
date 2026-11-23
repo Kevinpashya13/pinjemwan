@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pinjemwan — Peminjaman Buku Sederhana</title>
+  
+  <!-- Google Fonts: Newsreader (Serif) & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main Navigation & Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <h1 class="brand-title">pinjemwan</h1>
+        <p class="brand-tagline">Peminjaman buku perpustakaan sederhana & transparan</p>
+      </div>
+
+      <!-- Segmented Control Role Switcher -->
+      <nav class="role-switcher" aria-label="Pilih Role">
+        <button id="btn-role-tukang-pinjem" class="role-btn active" type="button">
+          Tukang Pinjem
+        </button>
+        <button id="btn-role-admin" class="role-btn" type="button">
+          Admin
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- VIEW 1: TUKANG PINJEM -->
+    <section id="view-tukang-pinjem" class="role-view">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Katalog Buku</h2>
+          <p class="section-desc">Pilih buku yang tersedia dan pinjam langsung tanpa ribet.</p>
+        </div>
+      </div>
+
+      <!-- Grid of Books -->
+      <div id="books-grid" class="books-grid">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: ADMIN DASHBOARD -->
+    <section id="view-admin" class="role-view hidden">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Dashboard Pengelola</h2>
+          <p class="section-desc">Pantau sirkulasi peminjaman buku dan tambah koleksi baru.</p>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <!-- Card: Add New Book Form -->
+        <div class="card form-card">
+          <h3 class="card-title">Tambah Koleksi Buku</h3>
+          <form id="form-add-book" class="app-form">
+            <div class="form-group">
+              <label for="book-title">Judul Buku</label>
+              <input type="text" id="book-title" placeholder="Contoh: Bumi Manusia" required />
+            </div>
+            <div class="form-group">
+              <label for="book-author">Penulis</label>
+              <input type="text" id="book-author" placeholder="Contoh: Pramoedya Ananta Toer" required />
+            </div>
+            <div class="form-group">
+              <label for="book-copies">Jumlah Eksemplar (Stok)</label>
+              <input type="number" id="book-copies" min="1" value="1" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Simpan Koleksi</button>
+          </form>
+        </div>
+
+        <!-- Card: Active Loans Tracking Table -->
+        <div class="card table-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">Daftar Peminjam Aktif</h3>
+            <span id="active-loans-count" class="badge badge-neutral">0 dipinjam</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Judul Buku</th>
+                  <th>Tukang Pinjem</th>
+                  <th>Waktu Pinjam</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-loans-body">
+                <!-- Rendered dynamically by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: Form Peminjaman Buku (Tukang Pinjem) -->
+  <div id="loan-modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Konfirmasi Pinjam Buku</h3>
+        <button id="btn-close-modal" class="btn-close" type="button" aria-label="Tutup">&times;</button>
+      </div>
+      <form id="form-loan" class="app-form">
+        <div class="book-preview-box">
+          <span class="preview-label">Buku yang dipilih:</span>
+          <h4 id="modal-book-title" class="preview-title">-</h4>
+          <p id="modal-book-author" class="preview-author">-</p>
+        </div>
+
+        <div class="form-group">
+          <label for="tukang-pinjem-name">Nama Tukang Pinjem</label>
+          <input type="text" id="tukang-pinjem-name" placeholder="Masukkan nama lengkap Anda" required />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-loan" class="btn btn-secondary">Batal</button>
+          <button type="submit" class="btn btn-primary">Konfirmasi Pinjam</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

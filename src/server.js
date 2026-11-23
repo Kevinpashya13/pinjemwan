@@ -1,14 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
+const path = require('node:path'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// 1. GET /api/books - Get all books in catalog
+// Get all books in catalog
 app.get('/api/books', (req, res) => {
   try {
     const books = db.prepare('SELECT * FROM books ORDER BY id DESC').all();
@@ -18,7 +20,7 @@ app.get('/api/books', (req, res) => {
   }
 });
 
-// 2. POST /api/books - Admin: Add a new book
+// Admin: Add a new book
 app.post('/api/books', (req, res) => {
   try {
     const { title, author, total_copies } = req.body;
@@ -40,7 +42,7 @@ app.post('/api/books', (req, res) => {
   }
 });
 
-// 3. GET /api/loans - Admin: Get loan records (optional filter: ?status=active)
+// Admin: Get loan records (optional filter: ?status=active)
 app.get('/api/loans', (req, res) => {
   try {
     const { status } = req.query;
@@ -64,7 +66,7 @@ app.get('/api/loans', (req, res) => {
   }
 });
 
-// 4. POST /api/loans - Tukang Pinjem: Borrow a book
+// Tukang Pinjem: Borrow a book
 app.post('/api/loans', (req, res) => {
   try {
     const { book_id, tukang_pinjem } = req.body;
@@ -96,7 +98,7 @@ app.post('/api/loans', (req, res) => {
   }
 });
 
-// 5. POST /api/loans/:id/return - Admin: Confirm book return
+// Admin: Confirm book return
 app.post('/api/loans/:id/return', (req, res) => {
   try {
     const loanId = req.params.id;
