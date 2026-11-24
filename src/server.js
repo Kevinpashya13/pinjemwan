@@ -10,10 +10,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Get all books in catalog
+// Get all books in catalog with live availability status
 app.get('/api/books', (req, res) => {
   try {
-    const books = db.prepare('SELECT * FROM books ORDER BY id DESC').all();
+    const books = db.prepare(`
+      SELECT books.*,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM loans WHERE loans.book_id = books.id AND loans.status = 'active') 
+          THEN 0 
+          ELSE 1 
+        END AS is_available
+      FROM books 
+      ORDER BY books.id DESC
+    `).all();
     res.json(books);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -23,26 +32,26 @@ app.get('/api/books', (req, res) => {
 // Admin: Add a new book
 app.post('/api/books', (req, res) => {
   try {
-    const { title, author, total_copies } = req.body;
-    if (!title || !author || !total_copies || Number(total_copies) <= 0) {
-      return res.status(400).json({ error: 'Title, author, dan total_copies (> 0) wajib diisi cyuks' });
+    const { title, author } = req.body;
+    if (!title || !author || !title.trim() || !author.trim()) {
+      return res.status(400).json({ error: 'Title dan author wajib diisi cyuks' });
     }
 
-    const copies = parseInt(total_copies, 10);
     const insert = db.prepare(`
-      INSERT INTO books (title, author, total_copies, available_copies)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO books (title, author)
+      VALUES (?, ?)
     `);
-    const result = insert.run(title.trim(), author.trim(), copies, copies);
+    const result = insert.run(title.trim(), author.trim());
 
     const newBook = db.prepare('SELECT * FROM books WHERE id = ?').get(result.lastInsertRowid);
+    newBook.is_available = 1;
     res.status(201).json(newBook);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Admin: Get loan records (optional filter: ?status=active)
+// Admin: Get loan records (optional filter: ?status=active or ?status=returned)
 app.get('/api/loans', (req, res) => {
   try {
     const { status } = req.query;
@@ -79,12 +88,12 @@ app.post('/api/loans', (req, res) => {
       return res.status(404).json({ error: 'Gaada bukunya cyuks' });
     }
 
-    if (book.available_copies <= 0) {
-      return res.status(400).json({ error: 'Udah ada yang minjem cyuks' });
+    // Ensure book is not already borrowed
+    const activeLoan = db.prepare("SELECT 1 FROM loans WHERE book_id = ? AND status = 'active'").get(book_id);
+    if (activeLoan) {
+      return res.status(400).json({ error: 'Bukunya lagi dipinjam orang lain cyuks' });
     }
 
-    // Decrease book available copies & record loan transaction
-    db.prepare('UPDATE books SET available_copies = available_copies - 1 WHERE id = ?').run(book_id);
     const insertLoan = db.prepare(`
       INSERT INTO loans (book_id, tukang_pinjem, status)
       VALUES (?, ?, 'active')
@@ -108,14 +117,11 @@ app.post('/api/loans/:id/return', (req, res) => {
       return res.status(404).json({ error: 'Gaada yang minjem atoga udah dibalikin sih cyuks' });
     }
 
-    // Update loan status & restore book available copies
     db.prepare(`
       UPDATE loans
       SET status = 'returned', return_date = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(loanId);
-
-    db.prepare('UPDATE books SET available_copies = available_copies + 1 WHERE id = ?').run(loan.book_id);
 
     res.json({ message: 'Waduh makasih udah dibalikin cyuks' });
   } catch (err) {

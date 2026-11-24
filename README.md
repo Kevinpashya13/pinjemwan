@@ -6,14 +6,15 @@ A clean, lightweight book lending management web application built with a high-p
 
 ## Key Features
 
-- **Real-Time Catalog & Stock Tracking**: View available books and live copy counters. The borrow button is automatically disabled when a book is out of stock.
-- **Borrower View ("Tukang Pinjem")**: Frictionless borrowing flow via a simple modal form without tedious registration or authentication barriers.
-- **Admin Dashboard**:
-  - Add new book titles and set initial stock quantities.
+- **Real-Time Catalog & Availability Tracking**: View books with instant availability status. The borrow button is automatically disabled when a book is currently borrowed.
+- **Unified Sidebar Navigation**: Intuitive layout with Dashboard metrics, Catalog, Active Loans, and Returned History.
+- **Borrower View**: Frictionless borrowing flow via a simple modal form.
+- **Management & Monitoring**:
+  - Add new book titles and authors.
   - Transparent active borrower monitoring table.
-  - One-click physical book return confirmation, automatically replenishing stock count.
-- **Zero Framework Bloat**: Crafted purely with Semantic HTML5, Modern CSS (Design Tokens & Segmented Control), and Vanilla JavaScript.
-- **Native Embedded Database**: Powered by Node.js v22 built-in `node:sqlite` (`DatabaseSync`), eliminating the need for third-party native compilation tools like `node-gyp` or external database services.
+  - Loan return confirmation and history tracking.
+- **Zero Framework Bloat**: Crafted purely with Semantic HTML5, Modern CSS, and Vanilla JavaScript.
+- **Native Embedded Database**: Powered by Node.js v22 built-in `node:sqlite` (`DatabaseSync`), eliminating external database setup or native compilation tools.
 
 ---
 
@@ -62,29 +63,11 @@ http://localhost:3000
 
 | Method | Endpoint | Description | Request Payload | Response |
 |---|---|---|---|---|
-| `GET` | `/api/books` | Fetch all books and stock status | - | `200 OK` (Array of books) |
-| `POST` | `/api/books` | Add a new book to the catalog | `{"title": "...", "author": "...", "total_copies": 3}` | `201 Created` |
-| `GET` | `/api/loans` | Retrieve loan records | Optional: `?status=active` | `200 OK` (Array of loans) |
+| `GET` | `/api/books` | Fetch all books with live availability (`is_available`) | - | `200 OK` (Array of books) |
+| `POST` | `/api/books` | Add a new book to the catalog | `{"title": "...", "author": "..."}` | `201 Created` |
+| `GET` | `/api/loans` | Retrieve loan records | Optional: `?status=active` or `?status=returned` | `200 OK` (Array of loans) |
 | `POST` | `/api/loans` | Borrow a book | `{"book_id": 1, "tukang_pinjem": "Kevin"}` | `201 Created` |
-| `POST` | `/api/loans/:id/return` | Confirm book return (Admin) | - | `200 OK` |
-
----
-
-## Project Directory Structure
-
-```text
-pinjemwan/
-├── public/              # Client-side static assets
-│   ├── index.html       # Semantic page layout and modal
-│   ├── style.css        # Literary Minimal styling & design tokens
-│   └── app.js           # Interactive state management & API fetch calls
-├── src/                 # Node.js backend
-│   ├── db.js            # SQLite database initialization & seeding
-│   └── server.js        # Express REST API routes and static server
-├── .gitignore           # Ignored files (node_modules, SQLite database, logs)
-├── package.json         # Project metadata and dependencies
-└── README.md            # Project documentation
-```
+| `POST` | `/api/loans/:id/return` | Confirm book return | - | `200 OK` |
 
 ---
 

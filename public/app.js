@@ -2,6 +2,7 @@
 let currentView = 'dashboard';
 let cachedBooks = [];
 let cachedLoans = [];
+let cachedHistory = [];
 let selectedBook = null;
 
 // --- DOM Elements ---
@@ -11,9 +12,9 @@ const badgeLoansCount = document.getElementById('badge-loans-count');
 
 // Dashboard Elements
 const statTotalTitles = document.getElementById('stat-total-titles');
-const statTotalCopies = document.getElementById('stat-total-copies');
+const statAvailableBooks = document.getElementById('stat-available-books');
 const statActiveLoans = document.getElementById('stat-active-loans');
-const statAvailableCopies = document.getElementById('stat-available-copies');
+const statReturnedLoans = document.getElementById('stat-returned-loans');
 const tableDashboardLoansBody = document.getElementById('table-dashboard-loans-body');
 const btnSeeAllLoans = document.getElementById('btn-see-all-loans');
 
@@ -23,6 +24,9 @@ const inputSearchBooks = document.getElementById('input-search-books');
 
 // Loans Elements
 const tableLoansBody = document.getElementById('table-loans-body');
+
+// History Elements
+const tableHistoryBody = document.getElementById('table-history-body');
 
 // Add Book Elements
 const formAddBook = document.getElementById('form-add-book');
@@ -120,7 +124,7 @@ function closeMobileSidebar() {
 
 // --- Data Fetching ---
 async function refreshAllData() {
-  await Promise.all([loadBooks(), loadLoans()]);
+  await Promise.all([loadBooks(), loadLoans(), loadHistory()]);
   updateDashboard();
 }
 
@@ -147,17 +151,29 @@ async function loadLoans() {
   }
 }
 
+// --- API: Fetch Riwayat Peminjaman yang Selesai ---
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/loans?status=returned');
+    if (!res.ok) throw new Error('Gagal memuat riwayat peminjaman');
+    cachedHistory = await res.json();
+    renderHistoryTable(cachedHistory);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
 // --- Render Dashboard & Stats ---
 function updateDashboard() {
-  const totalTitles = cachedBooks.length;
-  const totalCopies = cachedBooks.reduce((sum, b) => sum + (Number(b.total_copies) || 0), 0);
-  const availableCopies = cachedBooks.reduce((sum, b) => sum + (Number(b.available_copies) || 0), 0);
+  const totalBooks = cachedBooks.length;
   const activeLoans = cachedLoans.length;
+  const availableBooks = cachedBooks.filter((b) => Boolean(b.is_available)).length;
+  const returnedLoans = cachedHistory.length;
 
-  statTotalTitles.textContent = totalTitles;
-  statTotalCopies.textContent = totalCopies;
+  statTotalTitles.textContent = totalBooks;
+  statAvailableBooks.textContent = availableBooks;
   statActiveLoans.textContent = activeLoans;
-  statAvailableCopies.textContent = availableCopies;
+  statReturnedLoans.textContent = returnedLoans;
 
   // Render top 5 recent loans in dashboard table
   renderDashboardLoansTable(cachedLoans.slice(0, 5));
@@ -202,7 +218,7 @@ function renderBooksGrid(books) {
   }
 
   books.forEach((book) => {
-    const isAvailable = book.available_copies > 0;
+    const isAvailable = Boolean(book.is_available);
     const card = document.createElement('div');
     card.className = 'book-card';
     card.innerHTML = `
@@ -212,13 +228,13 @@ function renderBooksGrid(books) {
       </div>
       <div class="book-card-footer">
         <span class="badge ${isAvailable ? 'badge-available' : 'badge-empty'}">
-          ${isAvailable ? `Stok: ${book.available_copies}/${book.total_copies}` : 'Habis'}
+          ${isAvailable ? 'Tersedia' : 'Sedang Dipinjam'}
         </span>
         <button 
           class="btn btn-primary btn-sm btn-pinjam" 
           ${isAvailable ? '' : 'disabled'}
         >
-          ${isAvailable ? 'Pinjam Buku' : 'Stok Habis'}
+          ${isAvailable ? 'Pinjam Buku' : 'Dipinjam'}
         </button>
       </div>
     `;
@@ -232,7 +248,7 @@ function renderBooksGrid(books) {
   });
 }
 
-// --- Render Loans Table (View Peminjaman) ---
+// --- Render Loans Table (View Peminjaman Aktif) ---
 function renderLoansTable(loans) {
   tableLoansBody.innerHTML = '';
 
@@ -262,18 +278,43 @@ function renderLoansTable(loans) {
   });
 }
 
+// --- Render History Table (View Riwayat Peminjaman) ---
+function renderHistoryTable(history) {
+  tableHistoryBody.innerHTML = '';
+
+  if (history.length === 0) {
+    tableHistoryBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty-cell">Belum ada riwayat buku yang dikembalikan.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  history.forEach((loan) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(loan.book_title)}</strong></td>
+      <td>${escapeHtml(loan.tukang_pinjem)}</td>
+      <td>${formatDateTime(loan.borrow_date)}</td>
+      <td>${formatDateTime(loan.return_date)}</td>
+      <td><span class="badge badge-available">Dikembalikan</span></td>
+    `;
+    tableHistoryBody.appendChild(tr);
+  });
+}
+
 // --- Form: Tambah Buku ---
 async function handleAddBook(e) {
   e.preventDefault();
   const title = document.getElementById('book-title').value.trim();
   const author = document.getElementById('book-author').value.trim();
-  const total_copies = document.getElementById('book-copies').value;
 
   try {
     const res = await fetch('/api/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, author, total_copies: Number(total_copies) }),
+      body: JSON.stringify({ title, author }),
     });
 
     const data = await res.json();

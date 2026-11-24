@@ -9,8 +9,6 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     author TEXT NOT NULL,
-    total_copies INTEGER NOT NULL,
-    available_copies INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -25,16 +23,24 @@ db.exec(`
   );
 `);
 
+// Migration safeguard in case existing database has legacy stock columns
+try {
+  db.exec(`
+    ALTER TABLE books DROP COLUMN total_copies;
+    ALTER TABLE books DROP COLUMN available_copies;
+  `);
+} catch {}
+
 const countBooks = db.prepare('SELECT COUNT(*) AS total FROM books').get();
 if (countBooks.total === 0) {
   const insertSeed = db.prepare(`
-    INSERT INTO books (title, author, total_copies, available_copies)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO books (title, author)
+    VALUES (?, ?)
   `);
 
-  insertSeed.run('Laskar Pelangi', 'Andrea Hirata', 3, 3);
-  insertSeed.run('Filosofi Teras', 'Henry Manampiring', 2, 2);
-  insertSeed.run('Atomic Habits', 'James Clear', 1, 1);
+  insertSeed.run('Laskar Pelangi', 'Andrea Hirata');
+  insertSeed.run('Filosofi Teras', 'Henry Manampiring');
+  insertSeed.run('Atomic Habits', 'James Clear');
   console.log('Seed data initialized successfully.');
 }
 

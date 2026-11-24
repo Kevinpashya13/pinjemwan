@@ -75,6 +75,18 @@
           <span id="badge-loans-count" class="nav-badge">0</span>
         </button>
 
+        <!-- History / Riwayat Peminjaman Icon -->
+        <button class="nav-item" data-view="history" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M12 7v5l4 2"/>
+            </svg>
+          </span>
+          <span>Riwayat Peminjaman</span>
+        </button>
+
         <!-- Add Book Icon -->
         <button class="nav-item" data-view="add-book" type="button">
           <span class="nav-icon">
@@ -108,24 +120,24 @@
 
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="stat-label">Total Judul Buku</span>
+            <span class="stat-label">Total Buku</span>
             <div id="stat-total-titles" class="stat-value">-</div>
             <span class="stat-caption">Koleksi terdaftar</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Total Eksemplar</span>
-            <div id="stat-total-copies" class="stat-value">-</div>
-            <span class="stat-caption">Fisik buku keseluruhan</span>
+            <span class="stat-label">Buku Tersedia</span>
+            <div id="stat-available-books" class="stat-value text-success">-</div>
+            <span class="stat-caption">Siap untuk dipinjam</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Buku Sedang Dipinjam</span>
+            <span class="stat-label">Sedang Dipinjam</span>
             <div id="stat-active-loans" class="stat-value text-accent">-</div>
             <span class="stat-caption">Peminjam aktif saat ini</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Buku Tersedia</span>
-            <div id="stat-available-copies" class="stat-value text-success">-</div>
-            <span class="stat-caption">Siap untuk dipinjam</span>
+            <span class="stat-label">Riwayat Selesai</span>
+            <div id="stat-returned-loans" class="stat-value">-</div>
+            <span class="stat-caption">Total buku dikembalikan</span>
           </div>
         </div>
 
@@ -202,7 +214,34 @@
         </div>
       </section>
 
-      <!-- VIEW 4: TAMBAH BUKU -->
+      <!-- VIEW 4: RIWAYAT PEMINJAMAN (SELESAI) -->
+      <section id="view-history" class="content-view hidden">
+        <div class="section-header">
+          <h2 class="section-title">Riwayat Peminjaman</h2>
+          <p class="section-desc">Catatan buku yang pernah dipinjam dan telah dikembalikan ke perpustakaan.</p>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Judul Buku</th>
+                  <th>Peminjam</th>
+                  <th>Waktu Pinjam</th>
+                  <th>Waktu Pengembalian</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="table-history-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: TAMBAH BUKU -->
       <section id="view-add-book" class="content-view hidden">
         <div class="section-header">
           <h2 class="section-title">Tambah Koleksi Baru</h2>
@@ -218,10 +257,6 @@
             <div class="form-group">
               <label for="book-author">Penulis</label>
               <input type="text" id="book-author" placeholder="Contoh: Pramoedya Ananta Toer" required />
-            </div>
-            <div class="form-group">
-              <label for="book-copies">Jumlah Eksemplar (Stok)</label>
-              <input type="number" id="book-copies" min="1" value="1" required />
             </div>
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">Simpan Koleksi Buku</button>
