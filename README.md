@@ -7,12 +7,13 @@ A clean, lightweight book lending management web application built with a high-p
 ## Key Features
 
 - **Real-Time Catalog & Availability Tracking**: View books with instant availability status. The borrow button is automatically disabled when a book is currently borrowed.
+- **Customizable Loan Duration & Overdue Tracking**: Borrowers can specify custom loan durations in days (default: 14 days), with live status badges (*Sisa X hr*, *Hari ini*, or *Terlambat X hr*).
 - **Unified Sidebar Navigation**: Intuitive layout with Dashboard metrics, Catalog, Active Loans, and Returned History.
-- **Borrower View**: Frictionless borrowing flow via a simple modal form.
+- **Borrower View**: Frictionless borrowing flow via a simple modal form with dynamic loan terms preview.
 - **Management & Monitoring**:
   - Add new book titles and authors.
-  - Transparent active borrower monitoring table.
-  - Loan return confirmation and history tracking.
+  - Transparent active borrower monitoring table with live due dates.
+  - Loan return confirmation and complete return history audit trail.
 - **Zero Framework Bloat**: Crafted purely with Semantic HTML5, Modern CSS, and Vanilla JavaScript.
 - **Native Embedded Database**: Powered by Node.js v22 built-in `node:sqlite` (`DatabaseSync`), eliminating external database setup or native compilation tools.
 
@@ -65,8 +66,8 @@ http://localhost:3000
 |---|---|---|---|---|
 | `GET` | `/api/books` | Fetch all books with live availability (`is_available`) | - | `200 OK` (Array of books) |
 | `POST` | `/api/books` | Add a new book to the catalog | `{"title": "...", "author": "..."}` | `201 Created` |
-| `GET` | `/api/loans` | Retrieve loan records | Optional: `?status=active` or `?status=returned` | `200 OK` (Array of loans) |
-| `POST` | `/api/loans` | Borrow a book | `{"book_id": 1, "tukang_pinjem": "Kevin"}` | `201 Created` |
+| `GET` | `/api/loans` | Retrieve loan records with `due_date` | Optional: `?status=active` or `?status=returned` | `200 OK` (Array of loans) |
+| `POST` | `/api/loans` | Borrow a book with optional custom duration | `{"book_id": 1, "tukang_pinjem": "Kevin", "duration_days": 14}` | `201 Created` |
 | `POST` | `/api/loans/:id/return` | Confirm book return | - | `200 OK` |
 
 ---

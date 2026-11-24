@@ -51,12 +51,15 @@ app.post('/api/books', (req, res) => {
   }
 });
 
-// Admin: Get loan records (optional filter: ?status=active or ?status=returned)
+// Admin: Get loan records with due date
 app.get('/api/loans', (req, res) => {
   try {
     const { status } = req.query;
     let query = `
-      SELECT loans.*, books.title AS book_title, books.author AS book_author
+      SELECT loans.*,
+        COALESCE(loans.due_date, datetime(loans.borrow_date, '+14 days')) AS due_date,
+        books.title AS book_title,
+        books.author AS book_author
       FROM loans
       JOIN books ON loans.book_id = books.id
     `;
@@ -75,13 +78,16 @@ app.get('/api/loans', (req, res) => {
   }
 });
 
-// Tukang Pinjem: Borrow a book
+// Tukang Pinjem: Borrow a book with custom duration days
 app.post('/api/loans', (req, res) => {
   try {
-    const { book_id, tukang_pinjem } = req.body;
+    const { book_id, tukang_pinjem, duration_days } = req.body;
     if (!book_id || !tukang_pinjem || !tukang_pinjem.trim()) {
       return res.status(400).json({ error: 'book_id dan tukang_pinjem isi dulu cyuks' });
     }
+
+    const days = parseInt(duration_days, 10);
+    const validDays = !isNaN(days) && days > 0 ? days : 14;
 
     const book = db.prepare('SELECT * FROM books WHERE id = ?').get(book_id);
     if (!book) {
@@ -95,12 +101,21 @@ app.post('/api/loans', (req, res) => {
     }
 
     const insertLoan = db.prepare(`
-      INSERT INTO loans (book_id, tukang_pinjem, status)
-      VALUES (?, ?, 'active')
+      INSERT INTO loans (book_id, tukang_pinjem, status, due_date)
+      VALUES (?, ?, 'active', datetime('now', ?))
     `);
-    const result = insertLoan.run(book_id, tukang_pinjem.trim());
+    const result = insertLoan.run(book_id, tukang_pinjem.trim(), `+${validDays} days`);
 
-    const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(result.lastInsertRowid);
+    const loan = db.prepare(`
+      SELECT loans.*,
+        COALESCE(loans.due_date, datetime(loans.borrow_date, '+14 days')) AS due_date,
+        books.title AS book_title,
+        books.author AS book_author
+      FROM loans
+      JOIN books ON loans.book_id = books.id
+      WHERE loans.id = ?
+    `).get(result.lastInsertRowid);
+
     res.status(201).json({ message: 'Dah minjem yaks cyuks', loan });
   } catch (err) {
     res.status(500).json({ error: err.message });

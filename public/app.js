@@ -14,7 +14,7 @@ const badgeLoansCount = document.getElementById('badge-loans-count');
 const statTotalTitles = document.getElementById('stat-total-titles');
 const statAvailableBooks = document.getElementById('stat-available-books');
 const statActiveLoans = document.getElementById('stat-active-loans');
-const statReturnedLoans = document.getElementById('stat-returned-loans');
+const statOverdueLoans = document.getElementById('stat-overdue-loans');
 const tableDashboardLoansBody = document.getElementById('table-dashboard-loans-body');
 const btnSeeAllLoans = document.getElementById('btn-see-all-loans');
 
@@ -38,7 +38,9 @@ const btnCancelLoan = document.getElementById('btn-cancel-loan');
 const formLoan = document.getElementById('form-loan');
 const modalBookTitle = document.getElementById('modal-book-title');
 const modalBookAuthor = document.getElementById('modal-book-author');
+const modalTermPreview = document.getElementById('modal-term-preview');
 const inputTukangPinjemName = document.getElementById('tukang-pinjem-name');
+const inputLoanDuration = document.getElementById('loan-duration');
 
 // Mobile Sidebar Elements
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
@@ -78,6 +80,16 @@ function setupEventListeners() {
 
   // Form: Tambah Buku
   formAddBook.addEventListener('submit', handleAddBook);
+
+  // Dynamic preview duration in modal
+  inputLoanDuration.addEventListener('input', () => {
+    const days = parseInt(inputLoanDuration.value, 10);
+    if (days && days > 0) {
+      modalTermPreview.innerHTML = `Tenggat pengembalian: <strong>${days} hari</strong>`;
+    } else {
+      modalTermPreview.innerHTML = `Tenggat pengembalian: <strong>-</strong>`;
+    }
+  });
 
   // Modal Pinjam Buku
   btnCloseModal.addEventListener('click', closeModal);
@@ -168,12 +180,22 @@ function updateDashboard() {
   const totalBooks = cachedBooks.length;
   const activeLoans = cachedLoans.length;
   const availableBooks = cachedBooks.filter((b) => Boolean(b.is_available)).length;
-  const returnedLoans = cachedHistory.length;
+  
+  // Hitung berapa buku aktif yang sudah lewat tenggat
+  const now = new Date();
+  const overdueLoans = cachedLoans.filter((loan) => {
+    let dueDate = parseDate(loan.due_date);
+    if (!dueDate && loan.borrow_date) {
+      const borrowDate = parseDate(loan.borrow_date);
+      if (borrowDate) dueDate = new Date(borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    }
+    return dueDate && dueDate.getTime() < now.getTime();
+  });
 
   statTotalTitles.textContent = totalBooks;
   statAvailableBooks.textContent = availableBooks;
   statActiveLoans.textContent = activeLoans;
-  statReturnedLoans.textContent = returnedLoans;
+  statOverdueLoans.textContent = overdueLoans.length;
 
   // Render top 5 recent loans in dashboard table
   renderDashboardLoansTable(cachedLoans.slice(0, 5));
@@ -185,7 +207,7 @@ function renderDashboardLoansTable(loans) {
   if (loans.length === 0) {
     tableDashboardLoansBody.innerHTML = `
       <tr>
-        <td colspan="4" class="empty-cell">Tidak ada buku yang sedang dipinjam saat ini.</td>
+        <td colspan="5" class="empty-cell">Tidak ada buku yang sedang dipinjam saat ini.</td>
       </tr>
     `;
     return;
@@ -197,6 +219,7 @@ function renderDashboardLoansTable(loans) {
       <td><strong>${escapeHtml(loan.book_title)}</strong></td>
       <td>${escapeHtml(loan.tukang_pinjem)}</td>
       <td>${formatDateTime(loan.borrow_date)}</td>
+      <td>${formatDueDate(loan.due_date, loan.borrow_date)}</td>
       <td>
         <button class="btn btn-secondary btn-sm btn-return" data-id="${loan.id}">
           Kembalikan
@@ -255,7 +278,7 @@ function renderLoansTable(loans) {
   if (loans.length === 0) {
     tableLoansBody.innerHTML = `
       <tr>
-        <td colspan="4" class="empty-cell">Belum ada peminjaman aktif.</td>
+        <td colspan="5" class="empty-cell">Belum ada peminjaman aktif.</td>
       </tr>
     `;
     return;
@@ -267,6 +290,7 @@ function renderLoansTable(loans) {
       <td><strong>${escapeHtml(loan.book_title)}</strong></td>
       <td>${escapeHtml(loan.tukang_pinjem)}</td>
       <td>${formatDateTime(loan.borrow_date)}</td>
+      <td>${formatDueDate(loan.due_date, loan.borrow_date)}</td>
       <td>
         <button class="btn btn-secondary btn-sm btn-return" data-id="${loan.id}">
           Kembalikan
@@ -285,20 +309,33 @@ function renderHistoryTable(history) {
   if (history.length === 0) {
     tableHistoryBody.innerHTML = `
       <tr>
-        <td colspan="5" class="empty-cell">Belum ada riwayat buku yang dikembalikan.</td>
+        <td colspan="6" class="empty-cell">Belum ada riwayat buku yang dikembalikan.</td>
       </tr>
     `;
     return;
   }
 
   history.forEach((loan) => {
+    const borrowDate = parseDate(loan.borrow_date);
+    let dueDate = parseDate(loan.due_date);
+    if (!dueDate && borrowDate) {
+      dueDate = new Date(borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    }
+    const returnDate = parseDate(loan.return_date);
+    const isOverdue = returnDate && dueDate && returnDate.getTime() > dueDate.getTime();
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${escapeHtml(loan.book_title)}</strong></td>
       <td>${escapeHtml(loan.tukang_pinjem)}</td>
       <td>${formatDateTime(loan.borrow_date)}</td>
+      <td>${formatDateTime(dueDate)}</td>
       <td>${formatDateTime(loan.return_date)}</td>
-      <td><span class="badge badge-available">Dikembalikan</span></td>
+      <td>
+        <span class="badge ${isOverdue ? 'badge-overdue' : 'badge-available'}">
+          ${isOverdue ? 'Terlambat Kembali' : 'Tepat Waktu'}
+        </span>
+      </td>
     `;
     tableHistoryBody.appendChild(tr);
   });
@@ -335,6 +372,8 @@ function openModal(book) {
   modalBookTitle.textContent = book.title;
   modalBookAuthor.textContent = `oleh ${book.author}`;
   inputTukangPinjemName.value = '';
+  inputLoanDuration.value = '14';
+  modalTermPreview.innerHTML = `Tenggat pengembalian: <strong>14 hari</strong>`;
   loanModal.classList.remove('hidden');
   loanModal.setAttribute('aria-hidden', 'false');
   inputTukangPinjemName.focus();
@@ -352,6 +391,8 @@ async function handleLoanSubmit(e) {
   if (!selectedBook) return;
 
   const tukang_pinjem = inputTukangPinjemName.value.trim();
+  const duration_days = parseInt(inputLoanDuration.value, 10) || 14;
+
   if (!tukang_pinjem) {
     showToast('Nama peminjam wajib diisi', 'error');
     return;
@@ -364,13 +405,14 @@ async function handleLoanSubmit(e) {
       body: JSON.stringify({
         book_id: selectedBook.id,
         tukang_pinjem: tukang_pinjem,
+        duration_days: duration_days,
       }),
     });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal memproses peminjaman');
 
-    showToast('Peminjaman berhasil dicatat!', 'success');
+    showToast(`Peminjaman berhasil dicatat! Tenggat: ${duration_days} hari.`, 'success');
     closeModal();
     await refreshAllData();
   } catch (err) {
@@ -412,15 +454,65 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-function formatDateTime(dateString) {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
+// Helper robust parser format SQLite ("YYYY-MM-DD HH:MM:SS") ke Date
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const isoStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const d = new Date(isoStr);
+  return !isNaN(d.getTime()) ? d : new Date(dateStr);
+}
+
+// Format tanggal seragam tanpa jam: "DD Mmm YYYY" (Contoh: "24 Nov 2026")
+function formatDateTime(dateInput) {
+  const date = dateInput instanceof Date ? dateInput : parseDate(dateInput);
+  if (!date || isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: 'numeric',
   });
+}
+
+function formatDueDate(dueDateString, borrowDateString) {
+  let dueDate = parseDate(dueDateString);
+  // Fallback hitung otomatis jika backend belum kirim due_date
+  if (!dueDate && borrowDateString) {
+    const borrowDate = parseDate(borrowDateString);
+    if (borrowDate) {
+      dueDate = new Date(borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    }
+  }
+  if (!dueDate || isNaN(dueDate.getTime())) return '-';
+
+  const now = new Date();
+  const diffTime = dueDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  const dateFormatted = formatDateTime(dueDate);
+
+  if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    return `
+      <div class="due-date-cell">
+        <span class="due-text">${dateFormatted}</span>
+        <span class="badge badge-overdue">Terlambat ${overdueDays} hr</span>
+      </div>
+    `;
+  } else if (diffDays === 0) {
+    return `
+      <div class="due-date-cell">
+        <span class="due-text">${dateFormatted}</span>
+        <span class="badge badge-warning">Hari ini</span>
+      </div>
+    `;
+  } else {
+    return `
+      <div class="due-date-cell">
+        <span class="due-text">${dateFormatted}</span>
+        <span class="badge badge-due">Sisa ${diffDays} hr</span>
+      </div>
+    `;
+  }
 }
 
 function escapeHtml(str) {

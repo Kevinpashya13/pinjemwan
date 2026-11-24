@@ -135,9 +135,9 @@
             <span class="stat-caption">Peminjam aktif saat ini</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Riwayat Selesai</span>
-            <div id="stat-returned-loans" class="stat-value">-</div>
-            <span class="stat-caption">Total buku dikembalikan</span>
+            <span class="stat-label">Lewat Tenggat</span>
+            <div id="stat-overdue-loans" class="stat-value text-danger">0</div>
+            <span class="stat-caption">Perlu segera dikembalikan</span>
           </div>
         </div>
 
@@ -153,6 +153,7 @@
                   <th>Judul Buku</th>
                   <th>Peminjam</th>
                   <th>Waktu Pinjam</th>
+                  <th>Tenggat Waktu</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -203,6 +204,7 @@
                   <th>Judul Buku</th>
                   <th>Tukang Pinjem</th>
                   <th>Waktu Pinjam</th>
+                  <th>Tenggat Waktu</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -229,6 +231,7 @@
                   <th>Judul Buku</th>
                   <th>Peminjam</th>
                   <th>Waktu Pinjam</th>
+                  <th>Tenggat</th>
                   <th>Waktu Pengembalian</th>
                   <th>Status</th>
                 </tr>
@@ -285,11 +288,23 @@
           <span class="preview-label">Buku yang dipilih:</span>
           <h4 id="modal-book-title" class="preview-title">-</h4>
           <p id="modal-book-author" class="preview-author">-</p>
+          <div class="loan-term-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="modal-term-preview">Tenggat pengembalian: <strong>14 hari</strong></span>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="tukang-pinjem-name">Nama Tukang Pinjem</label>
           <input type="text" id="tukang-pinjem-name" placeholder="Masukkan nama lengkap kamu" required />
+        </div>
+
+        <div class="form-group">
+          <label for="loan-duration">Lama Pinjam (Hari)</label>
+          <input type="number" id="loan-duration" min="1" max="90" value="14" required />
         </div>
 
         <div class="modal-actions">
